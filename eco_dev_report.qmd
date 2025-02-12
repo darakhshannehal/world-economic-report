@@ -1,0 +1,257 @@
+---
+title: "World Economic Report (1960-2018)"
+format: html
+editor: visual
+execute:
+  warning: false
+  message: false
+---
+
+```{r}
+# import libraries
+library(tidyverse)
+library(readxl)
+library(RColorBrewer)
+library(viridis)
+library(patchwork)
+library(skimr)
+```
+
+### Data Preparation and QA
+
+```{r}
+# Load world bank data
+world_bank = read_xlsx(path = "E:\\Data\\WorldBank.xlsx")
+head(world_bank)
+
+# Check data types
+glimpse(world_bank)
+```
+
+```{r}
+# Calculate population 
+world_bank <- world_bank %>% 
+mutate(`Population (M)` = (`GDP (USD)` / `GDP per capita (USD)`) / 1e6)
+head(world_bank)
+
+# Review missing values as % of total DataFrame
+colSums(is.na(world_bank)) / nrow(world_bank) *100
+
+# Summary of the Dataset
+skim(world_bank) 
+  
+```
+
+```{r}
+# Filter for the year 2014
+world_bank_2014 = world_bank %>%
+  filter(Year == 2014)
+
+head(world_bank_2014)
+
+# Load HDI table
+hdi = read_csv("E:\\Data\\HDI.csv")
+head(hdi)
+
+# select only iso3 and hdi_2014 columns
+hdi_2014 = hdi %>% 
+  select(iso3, hdi_2014)
+
+# rename iso3 column 
+hdi_2014 = hdi_2014 %>%
+  rename(`Country Code` = iso3)
+
+# Join 2014 data with the HDI table
+wb_hdi_2014 = full_join(world_bank_2014, hdi_2014)
+head(wb_hdi_2014)
+
+# Review missing values as % of total DataFrame
+colSums(is.na(wb_hdi_2014)) / nrow(wb_hdi_2014)*100
+
+
+```
+
+### Prepare data for visualization
+
+```{r}
+# Summarize GDP by Year and Region
+gdp_pivot = world_bank %>% 
+  group_by(Year, Region) %>%
+  summarise(`GDP (Trillions)` = sum(`GDP (USD)`, na.rm = TRUE)/ 1e12)
+
+head(gdp_pivot)
+
+# Summarize Population by Year and Region
+pop_pivot = world_bank %>% 
+  group_by(Year, Region) %>% 
+  summarise(`Population (Billions)` = sum(`Population (M)`, na.rm = TRUE)/1e3)
+                                          
+                                            
+head(pop_pivot)
+
+# remove missing values from Region and hdi_2014 columns
+wb_hdi_2014 = wb_hdi_2014 %>% 
+  filter(!is.na(Region) & !is.na(hdi_2014))
+
+# Summarize HDI by Region
+wb_hdi_by_region <- wb_hdi_2014 %>% 
+  group_by(Region) %>% 
+  summarise(avg_hdi = mean(hdi_2014)) %>% 
+  arrange(desc(avg_hdi))
+
+wb_hdi_by_region
+```
+
+### Data Visualization
+
+#### Create initial graphs for later integration into a final one-page infographic report
+
+```{r}
+# Plot GDP over time by Region
+ggplot(gdp_pivot, aes(x = Year, y = `GDP (Trillions)`, fill = Region)) +
+  geom_area() + 
+  labs(x = "Year", y = "GDP (Trillions)")
+
+# Plot Population over time by Region
+pop_pivot %>%
+  ggplot(aes(x = Year, y = `Population (Billions)`, fill = Region)) +
+  geom_area()  +
+  labs(x = "Year", y = "Population (Billions)")
+  
+# Prepare bubble chart data
+bubble_chart_data = wb_hdi_2014 %>% 
+  filter(!is.na(`Life expectancy at birth (years)`),
+         !is.na(`GDP per capita (USD)`),
+         !is.na(`Population (M)`))
+
+# Calculate min and max population values
+min_population = min(bubble_chart_data$`Population (M)`)
+max_population = max(bubble_chart_data$`Population (M)`)
+
+# Bubble chart: Life expectancy vs GDP per capita
+ggplot(bubble_chart_data, 
+       aes(x = `Life expectancy at birth (years)`, 
+           y = `GDP per capita (USD)`, 
+           size = `Population (M)`, 
+           color = Region)) +
+  scale_size_continuous(range = c(1, 15), 
+                        limits = c(min_population, max_population), 
+                        breaks = c(250, 500, 750, 1000, 1250)) +
+  scale_y_log10(labels = scales::comma) +
+  geom_point(alpha = 0.60)
+
+ggplot(wb_hdi_by_region, 
+       aes(x = reorder(Region, avg_hdi), y = avg_hdi)) +
+  geom_bar(stat = "identity", fill = "steelblue3", alpha = 0.7) +
+  coord_flip()
+
+# Filter out Iceland
+wb_hdi_2014 <- wb_hdi_2014 %>% filter(`Country Name` != "Iceland")
+
+# Electric Power Consumption vs. GDP per Capita
+plot5 = wb_hdi_2014 %>%
+  ggplot(aes(x = `Electric power consumption (kWh per capita)`   , 
+             y = `GDP per capita (USD)`, 
+             color = hdi_2014)) +
+  geom_point(alpha = 0.6, size = 3) +
+    coord_cartesian(ylim = c(0,125000), xlim = c(0, 20000))
+```
+
+### Build final report
+
+#### Combine visualizations into a single report style graphic
+
+```{r}
+# Define a custom theme
+custom_theme <- theme_minimal() +
+  theme( text = element_text(family = "Times New Roman"),
+    axis.text = element_text(size = 12, colour = "#000000"),
+    axis.title = element_text(size = 13),
+    panel.grid = element_blank(),
+    axis.line = element_line(size = 0.5, color = "black"),
+    axis.ticks = element_line(size = 0.5, color = "black"))
+
+# Apply the custom theme globally
+theme_set(custom_theme)
+```
+
+```{r}
+plot1 = ggplot(gdp_pivot, aes(x = Year, y = `GDP (Trillions)`,
+                              fill = Region)) + 
+  geom_area(alpha = 0.8, colour = "white") + 
+  scale_fill_brewer(palette = "Set2") +
+  scale_y_continuous(expand = c(0, 0)) +
+  labs(x = NULL, y = "GDP (Trillions)") +
+  theme(legend.title = element_blank(),
+        legend.position = c(0.02, 1),
+        legend.justification = c(0, 1), # Anchor to the top-right 
+        legend.margin = margin(0, 0, 0, 0))
+
+plot1
+
+plot2 = ggplot(pop_pivot, aes(x = Year, y = `Population (Billions)`, fill = Region)) + 
+  geom_area(alpha = 0.8, colour = "white") + 
+  scale_fill_brewer(palette = "Set2") +
+  labs(x = NULL, y = "Population (Billions)") +
+  scale_y_continuous(breaks = seq(0, 7, by = 1),
+                     expand = c(0, 0)) +
+  theme(legend.position = "none",
+        plot.margin = margin(t = 20, r = 80, b = 20, l = 20))
+plot2
+
+plot3 = ggplot(bubble_chart_data, aes(x = `Life expectancy at birth (years)`, y = `GDP per capita (USD)`, 
+                                      size = `Population (M)`, color = Region)) +
+  scale_size_continuous(range = c(1, 15),
+                        limits = c(min_population, max_population), breaks = c(250, 500, 750, 1000, 1250)) +
+  scale_color_brewer(palette = "Set2") +
+  scale_x_continuous(breaks = seq(50, 85, by = 5)) +
+  scale_y_log10(labels = scales::comma) +
+  geom_point(alpha = 0.8) +
+  theme(plot.margin = margin(t = 20, r = 80, b = 20, l = 10),
+        legend.text = element_text(size = 10),
+        legend.position = c(0, 1), # Position the legend at the top left
+        legend.justification = c(0, 1),
+        legend.direction = "horizontal") + # Set legend direction to horizontal
+  guides(colour = "none")
+
+plot3
+
+plot4 = ggplot(wb_hdi_by_region, aes(reorder(Region, avg_hdi), avg_hdi, , fill = Region)) +
+  geom_col(alpha = 0.8) + 
+  scale_fill_brewer(palette = "Set2") + 
+  labs(x = "Region", y = "Human Development Index (HDI)") +
+  scale_y_continuous(breaks = seq(0, 0.8, by = 0.2),
+                     expand = c(0, 0)) +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        legend.position = "none")
+
+plot4
+
+plot5 = ggplot(wb_hdi_2014, aes(x = `Electric power consumption (kWh per capita)`, y = `GDP per capita (USD)`, 
+                                color = hdi_2014)) + 
+  geom_point(alpha = 0.8, size = 3) + 
+  scale_color_viridis(option = "H", direction = -1, 
+                      breaks = seq(0.4, 0.9, by = 0.1), 
+                      guide = guide_legend(override.aes = list(size = 4, shape = 16))) + 
+  coord_cartesian(ylim = c(0, 125000), xlim = c(0, 20000)) + 
+  scale_y_continuous(labels = scales::comma) + 
+  scale_x_continuous(labels = scales::comma) +
+  theme(plot.margin = margin(t = 20, r = 80, b = 80, l = 20))
+
+plot5
+```
+
+```{r}
+ # Combine all plots
+combined_plot = (plot1 | plot2) / 
+                 plot3 /
+                 (plot4 | plot5) +
+  plot_annotation(title = "World Economic Report (1960-2018)",
+                  theme = theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold", margin = margin(t = 7, r = 0, b = 20, l = 0))))
+
+# Save the combined plot
+ggsave("econ_dev_report.png", combined_plot, width = 10.5, height = 13.5, units = "in", bg = "white")
+
+# Final edit with Canva
+```
