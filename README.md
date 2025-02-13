@@ -6,6 +6,10 @@ Visualizations generated are integrated into a one-page infographic-style report
 
 The datasets used in this analysis (`WorldBank.xlsx` and `HDI.csv`) are included in this repository.
 
+## Analysis
+![eco_dev_report.html](eco_dev_report.html) 
+
+
 ## Report
 The final output of this project is a one-page infographic-style report that visually summarizes the key findings.
 ![Eco_dev_report](Eco_dev_report.png)
