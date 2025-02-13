@@ -7,7 +7,8 @@ Visualizations generated are integrated into a one-page infographic-style report
 The datasets used in this analysis (`WorldBank.xlsx` and `HDI.csv`) are included in this repository.
 
 ## Analysis
-![eco_dev_report.html](eco_dev_report.html) 
+Check out the [rendered HTML output](https://darakhshannehal.github.io/world-economic-report/eco_dev_report.html) for the detailed analysis.
+
 
 
 ## Report
