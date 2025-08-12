@@ -1,6 +1,6 @@
 # World Economic Report (1960-2018)
 
-This project analyzes global economic development trends from 1960 to 2018, focusing on the relationship between GDP, population, energy consumption, and human development. It culminates in a one-page infographic-style report that visualizes global patterns and regional disparities.
+A data storytelling project built in **R**, visualizing global economic development trends from 1960 to 2018, focusing on the relationship between GDP, population, energy consumption, and human development. It culminates in a one-page infographic-style report that visualizes global patterns and regional disparities.
 
 ### View [Full Analysis](https://darakhshannehal.quarto.pub/world-economic-report/)
 
@@ -11,10 +11,10 @@ Visualizations generated are integrated into a one-page infographic-style report
 ### R Packages Used:
 
 - **tidyverse**: Data wrangling, transformation, and visualization
-- **readxl**: Importing Excel files (World Bank data)
-- **skimr**: Quick, readable data summaries for QA
-- **ggplot2** (via tidyverse): Core plotting engine for all visualizations
-- **viridis**: Color scales optimized for perceptual uniformity
+- **readxl**: Importing Excel files 
+- **skimr**: Data summaries
+- **ggplot2** (via tidyverse): Visualizations
+- **viridis**: perceptually uniform and colorblind-friendly color palettes
 - **RColorBrewer**: Region-based color palettes for plots
 - **patchwork**: Combining multiple ggplot visualizations into a single layout
 
