@@ -1,1 +1,4 @@
 *.qmd linguist-language=R
+
+*.html linguist-detectable=false
+*.js linguist-detectable=false
