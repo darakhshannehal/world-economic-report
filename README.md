@@ -8,7 +8,8 @@ A data storytelling project built in **R**, visualizing global economic developm
 
 Visualizations generated are integrated into a one-page infographic-style report using the patchwork package, highlighting trends in global growth and development.
 
-![](infographic-report.png)
+<p align="center">
+    <img src="infographic-report.png" width="70%" height="75%">
 
 ### R Packages Used:
 
